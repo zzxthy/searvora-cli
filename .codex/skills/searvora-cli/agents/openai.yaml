@@ -1,0 +1,4 @@
+interface:
+  display_name: "Searvora CLI"
+  short_description: "Teach Codex how to use the Searvora CLI safely and correctly"
+  default_prompt: "Use this skill when working with the Searvora CLI repository or package. Cover install, authentication, command groups, pricing/subscription aliasing, JSON output, and safe publish/usage boundaries."
