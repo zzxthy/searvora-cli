@@ -29,6 +29,8 @@ Common examples:
 ```bash
 searvora services list --json
 searvora services health --profile public --json
+printf '%s' "$SEARVORA_AUTH_PASSWORD" | searvora auth login --email you@example.com --password-stdin --profile public --json
+searvora auth me --profile public --json
 searvora price url --locale zh
 searvora facts audit --domain example.com --service-key "$SEARVORA_SERVICE_KEY" --platform-user-id "$SEARVORA_PLATFORM_USER_ID" --json
 searvora tools canonical check --url https://searvora.com --json
@@ -38,6 +40,7 @@ searvora tools canonical check --url https://searvora.com --json
 
 - `services` — service discovery, health checks, public URLs, and Compose hints.
 - `config` — local CLI profiles and endpoint configuration.
+- `auth` — Gateway login, current user, refresh, logout, and token validation.
 - `price` / `pricing` — pricing page, plan, checkout, portal, and subscription status commands.
 - `facts` — SEO Data Plane shared audit, link, refresh, URL fact, crawl, and tool facts.
 - `analysis` — SEO AI Analysis / SDP diagnostics and planning context.
@@ -64,6 +67,26 @@ searvora config get --json
 ```
 
 Stored token values are redacted by `config get`.
+
+## Authentication
+
+Login stores the Gateway access and refresh tokens in the local config file
+with `0600` permissions. Prefer `--password-stdin` or `SEARVORA_AUTH_PASSWORD`
+instead of placing passwords directly in shell history:
+
+```bash
+printf '%s' "$SEARVORA_AUTH_PASSWORD" | searvora auth login --email you@example.com --password-stdin --profile public --json
+searvora auth validate --profile public --json
+searvora auth me --profile public --json
+searvora auth refresh --profile public --json
+searvora auth logout --profile public --json
+```
+
+You can still provide one-off tokens without saving them:
+
+```bash
+searvora auth me --access-token "$SEARVORA_ACCESS_TOKEN" --profile public --json
+```
 
 ## JSON contract
 

@@ -40,6 +40,8 @@ Read `references/command-map.md` first when you need command names, auth inputs,
 - `npm install -g @searvora/cli`
 - `searvora --help`
 - `searvora --json services list`
+- `printf '%s' "$SEARVORA_AUTH_PASSWORD" | searvora auth login --email user@example.com --password-stdin --profile public --json`
+- `searvora auth validate --profile public --json`
 - `searvora price url --locale tw`
 - `searvora facts audit --domain example.com --service-key ... --platform-user-id ... --json`
 

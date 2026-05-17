@@ -5,6 +5,7 @@ import { parseArgv } from "./lib/args.js";
 import { authContext, defaultConfig, envOverlay, loadConfig, resolveProfile } from "./lib/config.js";
 import { printResult, makeEnvelope, commandError } from "./lib/output.js";
 import { handleServices } from "./commands/services.js";
+import { handleAuth } from "./commands/auth.js";
 import { handleConfig } from "./commands/config.js";
 import { handlePrice } from "./commands/price.js";
 import { handleFacts, handleAnalysis, handleSpider, handleContent } from "./commands/proxy.js";
@@ -33,6 +34,7 @@ export async function main(argv = process.argv.slice(2)) {
 
   switch (group) {
     case "services": return handleServices({ action, args: rest, context });
+    case "auth": return handleAuth({ action, args: rest, context });
     case "config": return handleConfig({ action, args: rest, context });
     case "price":
     case "pricing": return handlePrice({ action, args: rest, context });
@@ -42,7 +44,6 @@ export async function main(argv = process.argv.slice(2)) {
     case "spider": return handleSpider({ action, args: rest, context });
     case "tools": return handleTools({ action, args: rest, context });
     case "content": return handleContent({ action, args: rest, context });
-    case "auth":
     case "account":
     case "domains":
     case "integrations":
@@ -61,7 +62,7 @@ Usage:
 Groups:
   services      Service discovery, health, URLs, Compose profile hints
   config        CLI config profiles
-  auth          Gateway login/session/token commands (scaffolded)
+  auth          Gateway login/session/token commands
   account       User/account/permissions commands (scaffolded)
   domains       Domain inventory and access checks (scaffolded)
   price         Pricing page, plans, checkout, portal, subscription status

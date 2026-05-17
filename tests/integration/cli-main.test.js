@@ -20,6 +20,13 @@ test("main routes services and scaffolded workflow commands", async () => {
   assert.equal(workflow.data.status, "scaffolded");
 });
 
+test("main routes auth commands to the implemented auth handler", async () => {
+  const result = await main(["--json", "auth", "validate"]);
+  assert.equal(result.command, "auth.validate");
+  assert.equal(result.data.valid, false);
+  assert.equal(result.data.reason, "missing_access_token");
+});
+
 test("main uses explicit profile and environment config safely", async () => {
   const dir = mkdtempSync(join(tmpdir(), "searvora-main-"));
   const configPath = join(dir, "config.json");
