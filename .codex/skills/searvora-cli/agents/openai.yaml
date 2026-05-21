@@ -1,4 +1,4 @@
 interface:
   display_name: "Searvora CLI"
-  short_description: "Teach Codex how to use the Searvora CLI safely and correctly"
-  default_prompt: "Use this skill when working with the Searvora CLI repository or package. Cover install, authentication, command groups, pricing/subscription aliasing, JSON output, and safe publish/usage boundaries."
+  short_description: "Use @searvora/cli to authenticate and run Searvora SEO services, Spider crawls, Analysis, tools, pricing, and audit workflows."
+  default_prompt: "Use the Searvora CLI skill to operate @searvora/cli safely. Install or verify the package, authenticate with password-stdin/env, use --profile public and --json, run the correct command group, save raw artifacts, and produce evidence-backed SEO diagnostics without exposing secrets."
