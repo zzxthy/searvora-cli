@@ -1,11 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 const bin = new URL("../../src/index.js", import.meta.url).pathname;
+const packageVersion = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")).version;
 
 function cliJson(args, env = {}) {
   const out = execFileSync(process.execPath, [bin, "--json", ...args], { encoding: "utf8", env: { ...process.env, ...env } });
@@ -53,5 +54,5 @@ test("process CLI runs when invoked through an npm-style symlinked bin", () => {
 
   const result = spawnSync(process.execPath, [link, "--json", "version"], { encoding: "utf8" });
   assert.equal(result.status, 0);
-  assert.deepEqual(JSON.parse(result.stdout), { ok: true, command: "version", data: { version: "0.1.0" } });
+  assert.deepEqual(JSON.parse(result.stdout), { ok: true, command: "version", data: { version: packageVersion } });
 });

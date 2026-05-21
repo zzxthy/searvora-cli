@@ -13,7 +13,7 @@ import { handleTools } from "./commands/tools.js";
 import { handleDomains } from "./commands/domains.js";
 import { handleStaticGroup } from "./commands/misc.js";
 
-const VERSION = "0.1.0";
+const VERSION = "0.1.2";
 
 export async function main(argv = process.argv.slice(2)) {
   const { globals, rest } = parseArgv(argv);

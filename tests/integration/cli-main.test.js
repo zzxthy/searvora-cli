@@ -1,13 +1,15 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { main } from "../../src/index.js";
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
+const packageVersion = JSON.parse(readFileSync(new URL("../../package.json", import.meta.url), "utf8")).version;
+
 test("main returns structured help and version envelopes", async () => {
   assert.equal((await main(["--json", "help"])).command, "help");
-  assert.deepEqual(await main(["--json", "version"]), { ok: true, command: "version", data: { version: "0.1.0" } });
+  assert.deepEqual(await main(["--json", "version"]), { ok: true, command: "version", data: { version: packageVersion } });
 });
 
 test("main routes services and scaffolded workflow commands", async () => {
