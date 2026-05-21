@@ -10,6 +10,7 @@ import { handleConfig } from "./commands/config.js";
 import { handlePrice } from "./commands/price.js";
 import { handleFacts, handleAnalysis, handleSpider, handleContent } from "./commands/proxy.js";
 import { handleTools } from "./commands/tools.js";
+import { handleDomains } from "./commands/domains.js";
 import { handleStaticGroup } from "./commands/misc.js";
 
 const VERSION = "0.1.0";
@@ -44,8 +45,8 @@ export async function main(argv = process.argv.slice(2)) {
     case "spider": return handleSpider({ action, args: rest, context });
     case "tools": return handleTools({ action, args: rest, context });
     case "content": return handleContent({ action, args: rest, context });
+    case "domains": return handleDomains({ action, args: rest, context });
     case "account":
-    case "domains":
     case "integrations":
     case "ops":
     case "workflow": return handleStaticGroup({ group, action, args: rest, context });

@@ -67,6 +67,9 @@ searvora tools indexability check --url https://example.com/ --profile public --
 searvora tools sitemap extract --url https://example.com/ --profile public --json
 searvora tools sitemap validate --url https://example.com/sitemap.xml --profile public --json
 searvora tools robots check --url https://example.com/ --profile public --json
+searvora domains add --domain example.com --profile public --json
+searvora domains access-check --domain example.com --product sfm --profile public --json
+searvora facts audit --domain example.com --limit 100 --profile public --json
 searvora analysis health --profile public --json
 searvora analysis overview --profile public --json
 searvora spider health --profile public --json
@@ -74,18 +77,26 @@ searvora spider crawl --profile public --json
 searvora spider crawl create --profile public --body-json '{"start_url":"https://example.com/","max_pages":1200,"max_depth":20}' --json
 ```
 
-## Internal facts commands
+## Facts commands
 
-Data Plane internal commands usually require `--service-key` and `--platform-user-id` or matching env vars. Do not invent these values.
+Default `facts` commands are paid-user commands. They use the logged-in Gateway access token; Gateway checks product/domain entitlement and reads the internal Data Plane server-side.
 
 ```bash
 searvora facts audit --domain example.com --limit 100 --profile public --json
 searvora facts links --domain example.com --limit 100 --profile public --json
-searvora facts refresh --domain example.com --limit 100 --profile public --json
+searvora facts refresh --domain example.com --property-id sc-domain:example.com --limit 100 --profile public --json
 searvora facts crawl-runs --domain example.com --limit 20 --profile public --json
 ```
 
-If the CLI reports `missing_service_key` or `missing_platform_user_id`, ask for authorized internal credentials or continue with public `tools`, `analysis`, and `spider` evidence.
+If the CLI reports `missing_access_token`, log in or pass `--access-token`. If it reports `domain_access_denied`, the account lacks product/domain entitlement for that domain. Empty facts are valid when no crawl/shared data has been ingested yet.
+
+Internal Data Plane calls are ops/CI-only and must be explicit:
+
+```bash
+searvora facts audit --domain example.com --internal --service-key "$SEARVORA_SERVICE_KEY" --platform-user-id "$SEARVORA_PLATFORM_USER_ID" --json
+```
+
+If internal mode reports `missing_service_key` or `missing_platform_user_id`, ask for authorized internal credentials or continue with paid-user `tools`, `analysis`, and `spider` evidence.
 
 ## Common failure interpretation
 

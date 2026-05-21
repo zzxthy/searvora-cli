@@ -40,8 +40,8 @@ test("process CLI refuses malformed config for non-init commands", () => {
   assert.equal(JSON.parse(result.stdout).error.code, "cli_error");
 });
 
-test("process CLI facts guard errors are structured and local", () => {
-  const result = cliJson(["facts", "audit", "--domain", "example.com", "--service-key", "test-service-key"]);
+test("process CLI internal facts guard errors are structured and local", () => {
+  const result = cliJson(["facts", "audit", "--domain", "example.com", "--internal", "--service-key", "test-service-key"]);
   assert.equal(result.ok, false);
   assert.equal(result.error.code, "missing_platform_user_id");
 });

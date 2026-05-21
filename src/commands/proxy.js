@@ -3,15 +3,15 @@ import { requestJson, envelopeHttpError } from "../lib/http.js";
 import { makeEnvelope } from "../lib/output.js";
 
 const FACTS_ENDPOINTS = {
-  policy: { path: "/api/internal/shared-data/policy", internal: true, commandName: "policy" },
-  "crawl-runs": { path: "/api/internal/crawl-runs", internal: true, requiresUser: true, commandName: "crawl-runs", query: ["domain", "limit"] },
-  url: { path: "/api/internal/url-facts", internal: true, requiresUser: true, commandName: "url", query: ["propertyId", "rangeDays", "compareDays"] },
-  audit: { path: "/api/internal/audit/issues", internal: true, requiresUser: true, commandName: "audit", query: ["domain", "taskId", "limit"] },
-  links: { path: "/api/internal/links/overview", internal: true, requiresUser: true, commandName: "links", query: ["domain", "taskId", "limit"] },
-  refresh: { path: "/api/internal/refresh/opportunities", internal: true, requiresUser: true, commandName: "refresh", query: ["domain", "propertyId", "taskId", "limit", "rangeDays", "compareDays"] },
-  "content-opportunities": { path: "/api/internal/content/opportunities", internal: true, requiresUser: true, commandName: "content-opportunities", query: ["domain", "propertyId", "taskId", "limit", "rangeDays", "compareDays"] },
-  "crawl-ai-report": { path: "/api/internal/crawl/ai-report", internal: true, requiresUser: true, commandName: "crawl-ai-report", query: ["domain", "taskId"] },
-  "crawl-compare": { path: "/api/internal/crawl/compare", internal: true, requiresUser: true, commandName: "crawl-compare", query: ["domain", "currentTaskId", "previousTaskId", "limit"] },
+  policy: { path: "/api/internal/shared-data/policy", publicPath: "/api/v1/facts/policy", internal: true, commandName: "policy" },
+  "crawl-runs": { path: "/api/internal/crawl-runs", publicPath: "/api/v1/facts/crawl-runs", internal: true, requiresUser: true, commandName: "crawl-runs", query: ["domain", "limit"] },
+  url: { path: "/api/internal/url-facts", publicPath: "/api/v1/facts/url", internal: true, requiresUser: true, commandName: "url", query: ["propertyId", "rangeDays", "compareDays"] },
+  audit: { path: "/api/internal/audit/issues", publicPath: "/api/v1/facts/audit", internal: true, requiresUser: true, commandName: "audit", query: ["domain", "taskId", "limit"] },
+  links: { path: "/api/internal/links/overview", publicPath: "/api/v1/facts/links", internal: true, requiresUser: true, commandName: "links", query: ["domain", "taskId", "limit"] },
+  refresh: { path: "/api/internal/refresh/opportunities", publicPath: "/api/v1/facts/refresh", internal: true, requiresUser: true, commandName: "refresh", query: ["domain", "propertyId", "taskId", "limit", "rangeDays", "compareDays"] },
+  "content-opportunities": { path: "/api/internal/content/opportunities", publicPath: "/api/v1/facts/content-opportunities", internal: true, requiresUser: true, commandName: "content-opportunities", query: ["domain", "propertyId", "taskId", "limit", "rangeDays", "compareDays"] },
+  "crawl-ai-report": { path: "/api/internal/crawl/ai-report", publicPath: "/api/v1/facts/crawl-ai-report", internal: true, requiresUser: true, commandName: "crawl-ai-report", query: ["domain", "taskId"] },
+  "crawl-compare": { path: "/api/internal/crawl/compare", publicPath: "/api/v1/facts/crawl-compare", internal: true, requiresUser: true, commandName: "crawl-compare", query: ["domain", "currentTaskId", "previousTaskId", "limit"] },
 };
 
 const ANALYSIS_ENDPOINTS = {
@@ -79,10 +79,18 @@ export async function handleContent({ action, args, context }) {
 async function proxy({ group, service, baseUrl, endpoint, args, context }) {
   const { options } = parseOptions(args);
   const commandName = `${group}.${endpoint.commandName || endpoint.path}`;
-  if (endpoint.internal && !context.auth.serviceKey) {
+  const factsInternalMode = group === "facts" && (options.internal === true || process.env.SEARVORA_FACTS_MODE === "internal");
+  const paidUserFactsMode = group === "facts" && endpoint.publicPath && !factsInternalMode;
+  const requestBaseUrl = paidUserFactsMode ? context.profile.gatewayUrl : baseUrl;
+  const requestPath = paidUserFactsMode ? endpoint.publicPath : endpoint.path;
+  const requestInternal = endpoint.internal && !paidUserFactsMode;
+  if (paidUserFactsMode && !context.auth.accessToken) {
+    return makeEnvelope({ ok: false, command: commandName, profile: context.profileName, service: "gateway", error: { code: "missing_access_token", message: "Run searvora auth login first, set SEARVORA_ACCESS_TOKEN, or pass --access-token for paid-user facts commands.", retryable: false } });
+  }
+  if (requestInternal && !context.auth.serviceKey) {
     return makeEnvelope({ ok: false, command: commandName, profile: context.profileName, service, error: { code: "missing_service_key", message: "Set SEARVORA_SERVICE_KEY or pass --service-key for internal service commands.", retryable: false } });
   }
-  if (endpoint.requiresUser && !context.auth.platformUserId) {
+  if (requestInternal && endpoint.requiresUser && !context.auth.platformUserId) {
     return makeEnvelope({ ok: false, command: commandName, profile: context.profileName, service, error: { code: "missing_platform_user_id", message: "Set SEARVORA_PLATFORM_USER_ID or pass --platform-user-id for user-scoped Data Plane commands.", retryable: false } });
   }
   const query = {};
@@ -93,16 +101,16 @@ async function proxy({ group, service, baseUrl, endpoint, args, context }) {
   let body = undefined;
   if ((endpoint.method || "GET") !== "GET") body = options.bodyJson ? readJsonOption(options) : options;
   try {
-    const data = await requestJson({ method: endpoint.method || "GET", baseUrl, path: endpoint.path, query, body, auth: context.auth, internal: endpoint.internal, fetchImpl: context.fetchImpl });
-    return makeEnvelope({ command: commandName, profile: context.profileName, service, request: { query, body }, data });
+    const data = await requestJson({ method: endpoint.method || "GET", baseUrl: requestBaseUrl, path: requestPath, query, body, auth: context.auth, internal: requestInternal, fetchImpl: context.fetchImpl });
+    return makeEnvelope({ command: commandName, profile: context.profileName, service: paidUserFactsMode ? "gateway" : service, request: { query, body }, data });
   } catch (error) {
-    return envelopeHttpError({ error, command: commandName, profileName: context.profileName, service, request: { query, body }, pricingBaseUrl: context.profile.pricingBaseUrl, locale: context.globals.locale });
+    return envelopeHttpError({ error, command: commandName, profileName: context.profileName, service: paidUserFactsMode ? "gateway" : service, request: { query, body }, pricingBaseUrl: context.profile.pricingBaseUrl, locale: context.globals.locale });
   }
 }
 
 function toSnake(key) { return key.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`); }
 
-function factsHelp() { return "Usage: searvora facts policy|crawl-runs|url|audit|links|refresh|content-opportunities|crawl-ai-report|crawl-compare [options] [--json]"; }
+function factsHelp() { return "Usage: searvora facts policy|crawl-runs|url|audit|links|refresh|content-opportunities|crawl-ai-report|crawl-compare [options] [--internal] [--json]"; }
 function analysisHelp() { return "Usage: searvora analysis health|overview|pages|audit|links|refresh|clusters|content-opportunities|skills|ai-status|plan [options] [--json]"; }
 function spiderHelp() { return "Usage: searvora spider health|crawl [create] [options] [--json]"; }
 function contentHelp() { return "Usage: searvora content health|products|opportunities|articles|settings [options] [--json]"; }

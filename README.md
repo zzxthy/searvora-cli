@@ -32,7 +32,8 @@ searvora services health --profile public --json
 printf '%s' "$SEARVORA_AUTH_PASSWORD" | searvora auth login --email you@example.com --password-stdin --profile public --json
 searvora auth me --profile public --json
 searvora price url --locale zh
-searvora facts audit --domain example.com --service-key "$SEARVORA_SERVICE_KEY" --platform-user-id "$SEARVORA_PLATFORM_USER_ID" --json
+searvora domains add --domain example.com --profile public --json
+searvora facts audit --domain example.com --profile public --json
 searvora tools canonical check --url https://searvora.com --json
 ```
 
@@ -67,6 +68,29 @@ searvora config get --json
 ```
 
 Stored token values are redacted by `config get`.
+
+## Facts authentication modes
+
+By default, `facts` commands are paid-user commands. They call Gateway with the
+logged-in access token, and Gateway performs product/domain authorization before
+reading the internal SEO Data Plane with server-side service credentials:
+
+```bash
+searvora facts audit --domain example.com --profile public --json
+searvora facts links --domain example.com --profile public --json
+searvora facts crawl-runs --domain example.com --profile public --json
+```
+
+Internal CI/ops callers can still use the direct Data Plane route explicitly:
+
+```bash
+searvora facts audit --domain example.com --internal \
+  --service-key "$SEARVORA_SERVICE_KEY" \
+  --platform-user-id "$SEARVORA_PLATFORM_USER_ID" \
+  --json
+```
+
+Normal paid users should not need or see `SEARVORA_SERVICE_KEY`.
 
 ## Authentication
 

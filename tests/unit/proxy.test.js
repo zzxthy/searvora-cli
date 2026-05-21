@@ -6,6 +6,7 @@ function context(fetchImpl) {
   return {
     profileName: "local",
     profile: {
+      gatewayUrl: "http://gateway.test",
       dataPlaneUrl: "http://facts.test",
       sdpUrl: "http://sdp.test",
       sfmUrl: "http://sfm.test",
@@ -32,9 +33,37 @@ test("facts proxy forwards internal headers and allowed query fields", async () 
     captured = { url: String(url), init };
     return new Response(JSON.stringify({ issues: [] }), { status: 200 });
   };
-  const result = await handleFacts({ action: "audit", args: ["--domain", "example.com", "--limit", "5", "--ignored", "x"], context: context(fetchImpl) });
+  const result = await handleFacts({ action: "audit", args: ["--domain", "example.com", "--limit", "5", "--ignored", "x", "--internal"], context: context(fetchImpl) });
   assert.equal(result.ok, true);
   assert.equal(captured.url, "http://facts.test/api/internal/audit/issues?domain=example.com&limit=5");
+  assert.equal(captured.init.headers["X-Service-Key"], "svc");
+  assert.equal(captured.init.headers["X-Platform-User-Id"], "user");
+});
+
+test("facts proxy defaults to paid-user Gateway endpoint with access token", async () => {
+  let captured;
+  const fetchImpl = async (url, init) => {
+    captured = { url: String(url), init };
+    return new Response(JSON.stringify({ issues: [] }), { status: 200 });
+  };
+  const result = await handleFacts({ action: "audit", args: ["--domain", "example.com", "--limit", "5"], context: context(fetchImpl) });
+  assert.equal(result.ok, true);
+  assert.equal(result.service, "gateway");
+  assert.equal(captured.url, "http://gateway.test/api/v1/facts/audit?domain=example.com&limit=5");
+  assert.equal(captured.init.headers.Authorization, "Bearer access");
+  assert.equal(captured.init.headers["X-Service-Key"], undefined);
+});
+
+test("facts proxy internal mode keeps Data Plane service headers", async () => {
+  let captured;
+  const fetchImpl = async (url, init) => {
+    captured = { url: String(url), init };
+    return new Response(JSON.stringify({ issues: [] }), { status: 200 });
+  };
+  const result = await handleFacts({ action: "audit", args: ["--domain", "example.com", "--internal"], context: context(fetchImpl) });
+  assert.equal(result.ok, true);
+  assert.equal(result.service, "seo-data-plane");
+  assert.equal(captured.url, "http://facts.test/api/internal/audit/issues?domain=example.com");
   assert.equal(captured.init.headers["X-Service-Key"], "svc");
   assert.equal(captured.init.headers["X-Platform-User-Id"], "user");
 });
